@@ -106,7 +106,7 @@ log_info "Archivo .env creado con IP: $PUBLIC_IP"
 
 # 10. PROBAR CONEXIÓN A RDS
 log_info "Probando conexión a base de datos RDS..."
-if node test-rds-simple.js; then
+if node test-rds-simple.cjs; then
     log_info "✅ Conexión a RDS exitosa"
 else
     log_error "❌ Error de conexión a RDS"
