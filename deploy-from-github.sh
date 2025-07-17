@@ -29,36 +29,47 @@ log_error() {
 log_info "Actualizando sistema Ubuntu..."
 sudo apt update && sudo apt upgrade -y
 
-# 2. INSTALAR NODE.JS 18
+# 2. INSTALAR NODE.JS 18 (PRIMERO)
 log_info "Instalando Node.js 18..."
 curl -fsSL https://deb.nodesource.com/setup_18.x | sudo -E bash -
 sudo apt-get install -y nodejs
 
-# 3. INSTALAR PM2
+# 3. VERIFICAR NODE.JS
+log_info "Verificando Node.js..."
+echo "Node.js version: $(node --version)"
+echo "NPM version: $(npm --version)"
+
+# 4. INSTALAR PM2
 log_info "Instalando PM2..."
 sudo npm install -g pm2
 
-# 4. INSTALAR GIT (si no está)
-sudo apt install -y git
+# 5. VERIFICAR/INSTALAR GIT
+log_info "Verificando Git..."
+if ! command -v git &> /dev/null; then
+    log_info "Instalando Git..."
+    sudo apt install -y git
+fi
+echo "Git version: $(git --version)"
 
-# 5. VERIFICAR INSTALACIONES
-log_info "Verificando instalaciones..."
-echo "Node.js version: $(node --version)"
-echo "NPM version: $(npm --version)"
-echo "PM2 version: $(pm2 --version)"
+# 6. VERIFICAR INSTALACIONES FINALES
+log_info "Verificando todas las instalaciones..."
+echo "✅ Node.js: $(node --version)"
+echo "✅ NPM: $(npm --version)"
+echo "✅ PM2: $(pm2 --version)"
+echo "✅ Git: $(git --version)"
 
-# 6. CLONAR REPOSITORIO
+# 7. CLONAR REPOSITORIO
 log_info "Clonando repositorio desde GitHub..."
 cd ~
 rm -rf brayamsac-backend 2>/dev/null || true
 git clone https://github.com/patrickZC21/brayamsac-backend.git
 cd brayamsac-backend
 
-# 7. INSTALAR DEPENDENCIAS
+# 8. INSTALAR DEPENDENCIAS
 log_info "Instalando dependencias de producción..."
 npm ci --only=production
 
-# 8. CONFIGURAR VARIABLES DE ENTORNO
+# 9. CONFIGURAR VARIABLES DE ENTORNO
 log_info "Configurando variables de entorno..."
 
 # IP pública de la instancia EC2
@@ -93,9 +104,9 @@ EOF
 
 log_info "Archivo .env creado con IP: $PUBLIC_IP"
 
-# 9. PROBAR CONEXIÓN A RDS
+# 10. PROBAR CONEXIÓN A RDS
 log_info "Probando conexión a base de datos RDS..."
-if node test-simple-rds.js; then
+if node test-rds-simple.js; then
     log_info "✅ Conexión a RDS exitosa"
 else
     log_error "❌ Error de conexión a RDS"
@@ -103,19 +114,19 @@ else
     exit 1
 fi
 
-# 10. CONFIGURAR PM2
+# 11. CONFIGURAR PM2
 log_info "Configurando PM2..."
 pm2 stop brayamsac-backend 2>/dev/null || true
 pm2 delete brayamsac-backend 2>/dev/null || true
 pm2 start ecosystem.config.js
 
-# 11. CONFIGURAR PM2 PARA AUTOSTART
+# 12. CONFIGURAR PM2 PARA AUTOSTART
 pm2 save
 pm2 startup | tail -n 1 > pm2_startup.sh
 chmod +x pm2_startup.sh
 sudo ./pm2_startup.sh
 
-# 12. CONFIGURAR FIREWALL
+# 13. CONFIGURAR FIREWALL
 log_info "Configurando firewall Ubuntu..."
 sudo ufw allow 22      # SSH
 sudo ufw allow 3000    # Backend API
@@ -124,10 +135,10 @@ sudo ufw allow 80      # HTTP
 sudo ufw allow 443     # HTTPS
 sudo ufw --force enable
 
-# 13. CREAR DIRECTORIO DE LOGS
+# 14. CREAR DIRECTORIO DE LOGS
 mkdir -p logs
 
-# 14. VERIFICAR DESPLIEGUE
+# 15. VERIFICAR DESPLIEGUE
 log_info "Verificando despliegue..."
 sleep 5
 
@@ -139,7 +150,7 @@ else
     exit 1
 fi
 
-# 15. MOSTRAR INFORMACIÓN FINAL
+# 16. MOSTRAR INFORMACIÓN FINAL
 echo ""
 echo "🎉 ¡DESPLIEGUE COMPLETADO EXITOSAMENTE!"
 echo ""
